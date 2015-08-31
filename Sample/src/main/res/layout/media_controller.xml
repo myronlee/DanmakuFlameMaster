@@ -7,20 +7,22 @@
         android:layout_width="match_parent"
         android:layout_height="50dip"
         android:layout_gravity="top"
-        android:background="#8a006161" >
+        android:background="#8a006161"
+        android:visibility="gone">
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="60dip"
         android:layout_gravity="bottom"
-        android:background="#8acc0000" >
-
+         >
+        <!--android:background="#8acc0000"-->
         <Button
             android:id="@+id/rotate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/rotate" />
+            android:text="@string/rotate"
+            android:visibility="gone"/>
 
         <Button
             android:id="@+id/btn_hide"
@@ -34,17 +36,25 @@
             android:layout_height="wrap_content"
             android:text="@string/show_danmaku" />
 
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/editText"
+            android:layout_weight="1" />
+
         <Button
             android:id="@+id/btn_pause"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/pause_danmaku" />
+            android:text="@string/pause_danmaku"
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/btn_resume"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/resume_danmaku" />
+            android:text="@string/resume_danmaku"
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/btn_send"
@@ -56,7 +66,8 @@
             android:id="@+id/btn_send_danmakus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/send_danmakus" />
+            android:text="@string/send_danmakus"
+            android:visibility="gone"/>
     </LinearLayout>
 
 </FrameLayout>

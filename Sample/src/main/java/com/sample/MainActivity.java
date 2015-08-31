@@ -2,37 +2,26 @@
 package com.sample;
 
 import android.app.Activity;
-import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.media.MediaPlayer;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.SystemClock;
-import android.view.Menu;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.PopupWindow;
+import android.widget.Toast;
 import android.widget.VideoView;
 
-import master.flame.danmaku.controller.DrawHandler.Callback;
-import master.flame.danmaku.controller.IDanmakuView;
-import master.flame.danmaku.danmaku.loader.ILoader;
-import master.flame.danmaku.danmaku.loader.IllegalDataException;
-import master.flame.danmaku.danmaku.loader.android.DanmakuLoaderFactory;
-import master.flame.danmaku.danmaku.model.BaseDanmaku;
-import master.flame.danmaku.danmaku.model.DanmakuTimer;
-import master.flame.danmaku.danmaku.model.android.DanmakuGlobalConfig;
-import master.flame.danmaku.danmaku.model.android.Danmakus;
-import master.flame.danmaku.danmaku.parser.BaseDanmakuParser;
-import master.flame.danmaku.danmaku.parser.DanmakuFactory;
-import master.flame.danmaku.danmaku.parser.IDataSource;
-import master.flame.danmaku.danmaku.parser.android.BiliDanmukuParser;
-import master.flame.danmaku.ui.widget.DanmakuSurfaceView;
+import com.alipay.mobile.beehive.compositeui.danmaku.controller.IDanmakuView;
+import com.alipay.mobile.beehive.compositeui.danmaku.model.AlipayDanmaku;
+import com.alipay.mobile.beehive.compositeui.danmaku.model.BaseDanmaku;
+import com.alipay.mobile.beehive.compositeui.danmaku.parser.BaseDanmakuParser;
 
-import java.io.InputStream;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 public class MainActivity extends Activity implements View.OnClickListener {
 
@@ -41,7 +30,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private View mMediaController;
 
     public PopupWindow mPopupWindow;
-    
+
     private Button mBtnRotate;
 
     private Button mBtnHideDanmaku;
@@ -59,42 +48,18 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private long mPausedPosition;
 
     private Button mBtnSendDanmakus;
+    private EditText editText;
+    private long videoStartTime;
+    private int count;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        findViews();
+        init();
     }
 
-    private BaseDanmakuParser createParser(InputStream stream) {
-        
-        if(stream==null){
-            return new BaseDanmakuParser() {
-                
-                @Override
-                protected Danmakus parse() {
-                    return new Danmakus();
-                }
-            };
-        }
-            
-        
-        ILoader loader = DanmakuLoaderFactory.create(DanmakuLoaderFactory.TAG_BILI);
-
-        try {
-            loader.load(stream);
-        } catch (IllegalDataException e) {
-            e.printStackTrace();
-        }
-        BaseDanmakuParser parser = new BiliDanmukuParser();
-        IDataSource<?> dataSource = loader.getDataSource();
-        parser.load(dataSource);
-        return parser;
-
-    }
-
-    private void findViews() {
+    private void init() {
 
         mMediaController = findViewById(R.id.media_controller);
         mBtnRotate = (Button) findViewById(R.id.rotate);
@@ -112,51 +77,55 @@ public class MainActivity extends Activity implements View.OnClickListener {
         mBtnResumeDanmaku.setOnClickListener(this);
         mBtnSendDanmaku.setOnClickListener(this);
         mBtnSendDanmakus.setOnClickListener(this);
-        
+
+        editText = (EditText) findViewById(R.id.editText);
+        editText.setOnClickListener(this);
+
         // VideoView
         VideoView mVideoView = (VideoView) findViewById(R.id.videoview);
         // DanmakuView
         mDanmakuView = (IDanmakuView) findViewById(R.id.sv_danmaku);
-        DanmakuGlobalConfig.DEFAULT.setDanmakuStyle(DanmakuGlobalConfig.DANMAKU_STYLE_STROKEN, 3).setDuplicateMergingEnabled(false);
-        if (mDanmakuView != null) {
-            mParser = createParser(this.getResources().openRawResource(R.raw.comments));
-            mDanmakuView.setCallback(new Callback() {
 
-                @Override
-                public void updateTimer(DanmakuTimer timer) {
 
-                }
-
-                @Override
-                public void prepared() {
-                    mDanmakuView.start();
-                }
-            });
-            mDanmakuView.prepare(mParser);
-
-            mDanmakuView.showFPS(true);
-            mDanmakuView.enableDanmakuDrawingCache(true);
-            ((View) mDanmakuView).setOnClickListener(new View.OnClickListener() {
-
-                @Override
-                public void onClick(View view) {
-                    mMediaController.setVisibility(View.VISIBLE);
-                }
-            });
-        }
 
         if (mVideoView != null) {
             mVideoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                 @Override
                 public void onPrepared(MediaPlayer mediaPlayer) {
                     mediaPlayer.start();
+//                    mDanmakuView.setVideoStartTime(System.currentTimeMillis());
+//                    videoStartTime = System.currentTimeMillis();
                 }
             });
-            mVideoView.setVideoPath(Environment.getExternalStorageDirectory() + "/1.flv");
+            mVideoView.setVideoPath(Environment.getExternalStorageDirectory() + "/1.mp4");
         }
 
     }
-    
+
+    private List<BaseDanmaku> getDanmukus(String prefix) {
+
+        List<BaseDanmaku> danmakus = new ArrayList<BaseDanmaku>();
+        for (int i = 0; i < 10; i++) {
+            danmakus.add(new AlipayDanmaku.Builder(prefix +  + i + i + i + "1584个收藏是闹那样", i * 1000 + 300)
+                    .build());
+            danmakus.add(new AlipayDanmaku.Builder(prefix +  + i + i + i + "。。。。。。。。。。。。。。。", i * 1000 + 200)
+                    .duration(2000)
+                    .build());
+            danmakus.add(new AlipayDanmaku.Builder(prefix +  + i + i + i + "   暖被窝一次一千円节假日半价  /", i * 1000 + 400)
+                    .textColor(Color.YELLOW)
+                    .build());
+            danmakus.add(new AlipayDanmaku.Builder(prefix +  + i + i + i + "1耶耶耶耶耶耶耶耶耶耶耶耶", i * 1000 + 800)
+                    .textSize(32)
+                    .build());
+            danmakus.add(new AlipayDanmaku.Builder(prefix +  + i + i + i + "我是小伙伴！ 我是小伙伴！", i * 1000 + 900)
+                    .duration(1500)
+                    .textColor(Color.YELLOW)
+                    .textSize(32)
+                    .build());
+        }
+        return danmakus;
+    }
+
     @Override
     protected void onPause() {
         super.onPause();
@@ -182,7 +151,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
             mDanmakuView = null;
         }
     }
-    
+/*
+
     @Override
     public void onBackPressed() {
         super.onBackPressed();
@@ -193,78 +163,36 @@ public class MainActivity extends Activity implements View.OnClickListener {
         }
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
-    }
+*/
 
     @Override
     public void onClick(View v) {
-        if (v == mMediaController) {
-            mMediaController.setVisibility(View.GONE);
-        }
-        if (mDanmakuView == null || !mDanmakuView.isPrepared())
-            return;
-        if (v == mBtnRotate) {
-            setRequestedOrientation(getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE ? ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                    : ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        } else if (v == mBtnHideDanmaku) {
+
+        if (v == mBtnHideDanmaku) {
             mDanmakuView.hide();
-            //mPausedPosition = mDanmakuView.hideAndPauseDrawTask();
         } else if (v == mBtnShowDanmaku) {
-            mDanmakuView.show(); 
-            //mDanmakuView.showAndResumeDrawTask(mPausedPosition); // sync to the video time in your practice
-        } else if (v == mBtnPauseDanmaku) {
-            mDanmakuView.pause();
-        } else if (v == mBtnResumeDanmaku) {
-            mDanmakuView.resume();
+            mDanmakuView.addDanmaku(getDanmukus(String.valueOf(++count)));
+            mDanmakuView.show();
         } else if (v == mBtnSendDanmaku) {
-            addDanmaku(false);
-        } else if (v == mBtnSendDanmakus) {
-            Boolean b = (Boolean) mBtnSendDanmakus.getTag();
-            timer.cancel();
-            if(b == null || !b) {
-                mBtnSendDanmakus.setText(R.string.cancel_sending_danmakus);
-                timer = new Timer();                
-                timer.schedule(new AsyncAddTask(), 0, 1000);
-                mBtnSendDanmakus.setTag(true);
-            } else {
-                mBtnSendDanmakus.setText(R.string.send_danmakus);
-                mBtnSendDanmakus.setTag(false);
-            }
+            mDanmakuView.addDanmaku(new AlipayDanmaku.Builder("这条弹幕会立即显示", mDanmakuView.getCurrentTime()).textColor(Color.YELLOW).build());
+//            addDanmakuNow();
         }
     }
-    
-    Timer timer = new Timer();
-    class AsyncAddTask extends TimerTask {
-        
-        @Override
-        public void run() {
-            for(int i = 0;i<5;i++) {
-                addDanmaku(true);
-                SystemClock.sleep(20);
-            }
-        }
-    };
-    
-    
 
-    private void addDanmaku(boolean islive) {
-        BaseDanmaku danmaku = DanmakuFactory.createDanmaku(BaseDanmaku.TYPE_SCROLL_RL);
-        //for(int i=0;i<100;i++){
-        //}
-        danmaku.text = "这是一条弹幕" + System.nanoTime();
-        danmaku.padding = 5;
-        danmaku.priority = 1;
-        danmaku.isLive = islive;
-        danmaku.time = mDanmakuView.getCurrentTime() + 1200;
-        danmaku.textSize = 25f * (mParser.getDisplayer().getDensity() - 0.6f);
-        danmaku.textColor = Color.RED;
-        danmaku.textShadowColor = Color.WHITE;
-        //danmaku.underlineColor = Color.GREEN;
-        danmaku.borderColor = Color.GREEN;
-        mDanmakuView.addDanmaku(danmaku);
+
+    private void addDanmakuNow() {
+        if (!mDanmakuView.isStarted()) {
+            Toast.makeText(MainActivity.this, "弹幕视图还没有启用", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String comment = editText.getText().toString();
+        if (TextUtils.isEmpty(comment)) {
+            Toast.makeText(MainActivity.this, "弹幕不能为空", Toast.LENGTH_SHORT).show();
+        } else {
+            //如果想要让弹幕立刻显示，可设置弹幕的time为DanmakuView.getCurrentTime()（即视频当前播放的时间）
+            mDanmakuView.addDanmaku(new AlipayDanmaku.Builder(comment, mDanmakuView.getCurrentTime()).textColor(Color.YELLOW).build());
+        }
     }
 
 }
