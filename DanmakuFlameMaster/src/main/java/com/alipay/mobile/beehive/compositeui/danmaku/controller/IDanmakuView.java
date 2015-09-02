@@ -17,9 +17,6 @@ public interface IDanmakuView {
     public final static int THREAD_TYPE_HIGH_PRIORITY = 0x2;
     public final static int THREAD_TYPE_LOW_PRIORITY = 0x3;
 
-//    public void init();
-//
-//    public void init(Collection<BaseDanmaku> danmakus);
 
     boolean isStarted();
 
@@ -100,7 +97,11 @@ public interface IDanmakuView {
     
     public void internalHide();
 
-    public void setVideoStartTime(long videoStartTime);
+    public void setDanmukuInterval(long danmukuInterval);
+
+    ;
+
+    public long getDanmukuInterval();
     
     /**
      * show the danmakuview again if you called hideAndPauseDrawTask()

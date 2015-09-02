@@ -4,7 +4,7 @@ import android.graphics.Color;
 
 /**
  * Created by myron.lg on 2015/8/26.
- * 弹幕，即可滚动的字幕。
+ * 弹幕
  */
 public class AlipayDanmaku extends R2LDanmaku {
 
@@ -12,19 +12,16 @@ public class AlipayDanmaku extends R2LDanmaku {
     public static class Builder {
         //必需参数,作为构造器参数
         /**
-         * 弹幕内容，对长度没有限制，如需控制在15个字符以内，请在传入之间做截取
+         * 弹幕内容，对长度不做限制，如需控制在15个字符以内，请在传入之间做截取
          */
         private final String text;
-        /**
-         * 此条弹幕出现的时间，相对于调用IDanmakuView#start()的时间，以豪秒为单位
-         */
-        private final long time;
+
 
         //其它可配置参数
         /**
          * 此条弹幕显示时长，以毫秒为单位，默认3秒
          */
-        private long duration = 2000;
+        private long duration = 3000;
         /**
          * 弹幕字体大小，以dp为单位，默认18dp
          */
@@ -33,10 +30,13 @@ public class AlipayDanmaku extends R2LDanmaku {
          * 弹幕字体颜色，默认白色
          */
         private int textColor = Color.WHITE;
+        /**
+         * 此条弹幕出现的时间，由其在弹幕缓冲中的次序决定
+         */
+        private long time = -1;
 
-        public Builder(String text, long time) {
+        public Builder(String text) {
             this.text = text;
-            this.time = time;
         }
 
         public Builder duration(long duration) {

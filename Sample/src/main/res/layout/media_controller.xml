@@ -21,40 +21,45 @@
             android:id="@+id/rotate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/rotate"
-            android:visibility="gone"/>
-
-        <Button
-            android:id="@+id/btn_hide"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/hide_danmaku" />
-
-        <Button
-            android:id="@+id/btn_show"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/show_danmaku" />
-
-        <EditText
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/editText"
-            android:layout_weight="1" />
-
-        <Button
-            android:id="@+id/btn_pause"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/pause_danmaku"
-            android:visibility="gone" />
+            android:text="提高密度"
+            />
 
         <Button
             android:id="@+id/btn_resume"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/resume_danmaku"
-            android:visibility="gone" />
+            android:text="降低密度"
+             />
+
+
+        <Button
+            android:id="@+id/btn_hide"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/hide_danmaku"
+            android:visibility="gone"/>
+
+        <Button
+            android:id="@+id/btn_show"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/show_danmaku"
+            android:visibility="gone"/>
+
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/editText"
+            android:layout_weight="1"
+            android:visibility="gone"/>
+
+        <Button
+            android:id="@+id/btn_pause"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="打开弹幕"
+             />
+
 
         <Button
             android:id="@+id/btn_send"
@@ -67,7 +72,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/send_danmakus"
-            android:visibility="gone"/>
+            />
     </LinearLayout>
 
 </FrameLayout>

@@ -74,37 +74,27 @@ public class DanmakuView extends View implements IDanmakuView, IDanmakuViewContr
 
     private long mUiThreadId;
 
-    private BaseDanmakuParser parser;
+    private long danmukuInterval = 200;
 
-    private long position;
-    private long danmukuInterval = 150;
+    private long lastDanmakuShowTime = 0;
 
     public void setDanmukuInterval(long danmukuInterval) {
-        this.danmukuInterval = danmukuInterval;
+        this.danmukuInterval = Math.max(0, danmukuInterval);
     }
 
-    public void setVideoStartTime(long videoStartTime) {
-        this.videoStartTime = videoStartTime;
+    public long getDanmukuInterval() {
+        return danmukuInterval;
     }
-
-    private long videoStartTime = -1;
 
     /**
      * 弹幕的临时容器，在弹幕没有显示之前添加进来的弹幕会被临时放到这里，
      * 在弹幕显示的时候，这些弹幕会被真正的添加到弹幕视图
      */
-    private List<BaseDanmaku> danmakusNeedShow;
+    private List<BaseDanmaku> danmakuBuffer;
 
     public DanmakuView(Context context) {
         super(context);
         internalInit();
-    }
-
-    private void internalInit() {
-        mUiThreadId = Thread.currentThread().getId();
-        setBackgroundColor(Color.TRANSPARENT);
-        setDrawingCacheBackgroundColor(Color.TRANSPARENT);
-        DrawHelper.useDrawColorToClearCanvas(true, false);
     }
 
     public DanmakuView(Context context, AttributeSet attrs) {
@@ -117,55 +107,13 @@ public class DanmakuView extends View implements IDanmakuView, IDanmakuViewContr
         internalInit();
     }
 
-    /*
-        public void init() {
-            init(null);
-        }
+    private void internalInit() {
+        mUiThreadId = Thread.currentThread().getId();
+        setBackgroundColor(Color.TRANSPARENT);
+        setDrawingCacheBackgroundColor(Color.TRANSPARENT);
+        DrawHelper.useDrawColorToClearCanvas(true, false);
 
-        public void init(final Collection<BaseDanmaku> danmakus) {
-            enableDanmakuDrawingCache(true);
-            internalHide();
-            transformTextSizeFromDp2Px(danmakus);
-            parser = new BaseDanmakuParser() {
-                @Override
-                protected IDanmakus parse() {
-                    Danmakus _danmakus;
-                    if (danmakus != null && danmakus.size() != 0) {
-                        _danmakus = new Danmakus();
-                        for (BaseDanmaku danmaku : danmakus) {
-                            danmaku.setTimer(getTimer());
-                            if (!_danmakus.addItem(danmaku)) {
-                                Log.e("DanmakuView", "add item failed: " + danmaku.text);
-                            }
-                        }
-                    } else {
-                        _danmakus = new Danmakus();
-                    }
-                    return _danmakus;
-                }
-            };
-            setCallback(new Callback() {
-
-                @Override
-                public void updateTimer(DanmakuTimer timer) {
-
-                }
-
-                @Override
-                public void prepared() {
-                    internalStart(position);
-                }
-            });
-
-        }
-    */
-
-    private void transformTextSizeFromDp2Px(Collection<BaseDanmaku> danmakus) {
-        if (danmakus != null && danmakus.size() != 0) {
-            for (BaseDanmaku danmaku : danmakus) {
-                danmaku.textSize = dp2px(getContext(), danmaku.textSize);
-            }
-        }
+        danmakuBuffer = new ArrayList<BaseDanmaku>();
     }
 
     public void start() {
@@ -173,14 +121,12 @@ public class DanmakuView extends View implements IDanmakuView, IDanmakuViewContr
     }
 
     public void start(final long position) {
-//        internalHide();
-
         BaseDanmakuParser parser = new BaseDanmakuParser() {
             @Override
             protected IDanmakus parse() {
                 Danmakus danmakus = new Danmakus();
-                if (danmakusNeedShow != null && danmakusNeedShow.size() != 0) {
-                    for (BaseDanmaku danmaku : danmakusNeedShow) {
+                if (danmakuBuffer != null && danmakuBuffer.size() != 0) {
+                    for (BaseDanmaku danmaku : danmakuBuffer) {
                         danmaku.setTimer(getTimer());
                         danmakus.addItem(danmaku);
                     }
@@ -209,30 +155,28 @@ public class DanmakuView extends View implements IDanmakuView, IDanmakuViewContr
      */
     public void addDanmaku(List<BaseDanmaku> danmakus) {
         if (isPrepared() && isShown()) {
-            //弹幕打开时，添加弹幕，弹幕时间使用当前时间，弹幕将直接显示
-            long currentTime = getCurrentTime();
+            // 弹幕打开时，添加弹幕，
+            // 如果没有弹幕要显示，弹幕将直接显示
+            // 如果有弹幕要显示，此条弹幕排在这些弹幕之后显示
+            long earliestShowTime = Math.max(getCurrentTime(), lastDanmakuShowTime) + danmukuInterval;
             for (int i = 0; i < danmakus.size(); i++) {
                 BaseDanmaku danmaku = danmakus.get(i);
-                danmaku.textSize = dp2px(getContext(), danmaku.textSize);
-                danmaku.time = currentTime + i * danmukuInterval;
-                if (handler != null) {
-                    handler.addDanmaku(danmaku);
-                }
+                danmaku.textSize = dp2px(danmaku.textSize);
+                danmaku.time = earliestShowTime + i * danmukuInterval;
+                handler.addDanmaku(danmaku);
             }
+            lastDanmakuShowTime = earliestShowTime + (danmakus.size() - 1) * danmukuInterval;
         } else {
             //弹幕关闭时，添加弹幕，弹幕时间由弹幕次序计算得到
-            //无论是消息循环没有创建(从来没有打开过弹幕)，还是被暂停(打开过弹幕，后来关闭了)
             //添加的弹幕都会放到中转站，等待显示
-            if (danmakusNeedShow == null) {
-                danmakusNeedShow = new ArrayList<BaseDanmaku>();
-            }
-            int alreadyAddDanmukuNum = danmakusNeedShow.size();
+            int danmukuNum = danmakuBuffer.size();
             for (int i = 0; i < danmakus.size(); i++) {
                 BaseDanmaku danmaku = danmakus.get(i);
-                danmaku.textSize = dp2px(getContext(), danmaku.textSize);
-                danmaku.time = (alreadyAddDanmukuNum + i) * danmukuInterval;
-                danmakusNeedShow.add(danmaku);
+                danmaku.textSize = dp2px(danmaku.textSize);
+                danmaku.time = (danmukuNum + i + 1) * danmukuInterval;
+                danmakuBuffer.add(danmaku);
             }
+            lastDanmakuShowTime = danmakuBuffer.size() * danmukuInterval;
         }
     }
 
@@ -242,22 +186,19 @@ public class DanmakuView extends View implements IDanmakuView, IDanmakuViewContr
      * @param danmaku
      */
     public void addDanmaku(BaseDanmaku danmaku) {
-        danmaku.textSize = dp2px(getContext(), danmaku.textSize);
+        danmaku.textSize = dp2px(danmaku.textSize);
 
         if (isPrepared() && isShown()) {
-            //弹幕打开时，添加弹幕，弹幕时间使用当前时间，弹幕将直接显示
-            danmaku.time = getCurrentTime();
-            if (handler != null) {
-                handler.addDanmaku(danmaku);
-            }
+            // 弹幕打开时，添加弹幕，
+            // 如果没有弹幕要显示，弹幕将直接显示
+            // 如果有弹幕要显示，此条弹幕排在这些弹幕之后显示
+            long earliestShowTime = Math.max(getCurrentTime(), lastDanmakuShowTime);
+            danmaku.time = earliestShowTime + danmukuInterval;
+            handler.addDanmaku(danmaku);
         } else {
-            if (danmakusNeedShow == null) {
-                danmakusNeedShow = new ArrayList<BaseDanmaku>();
-            }
-
             //弹幕关闭时，添加弹幕，弹幕时间由弹幕次序计算得到
-            danmaku.time = danmakusNeedShow.size() * danmukuInterval;
-            danmakusNeedShow.add(danmaku);
+            danmaku.time = (danmakuBuffer.size() + 1) * danmukuInterval;
+            danmakuBuffer.add(danmaku);
         }
     }
 
@@ -533,6 +474,7 @@ public class DanmakuView extends View implements IDanmakuView, IDanmakuViewContr
 
 
     public void enableDanmakuDrawingCache(boolean enable) {
+//        去掉DrawingCache
 //        mEnableDanmakuDrwaingCache = enable;
     }
 
@@ -556,35 +498,18 @@ public class DanmakuView extends View implements IDanmakuView, IDanmakuViewContr
      */
     @Override
     public void show() {
-//        if (videoStartTime == -1) {
-////            throw new Exception("videoStartTime must be set before show()");
-//            return;
-//        }
-//        //避免重复的初始化，只需在第一次显示的时候初始化
-//        if (!isStarted()) {
-//            start(System.currentTimeMillis() - videoStartTime);
-//        }
-//        showAndResumeDrawTask(System.currentTimeMillis() - videoStartTime);
-//        if (!isStarted()) {
-//            start();
-//        } else {
-////            handler.resetTimer();
-//            if (handler != null && danmakusNeedShow != null) {
-//                for (int i = 0; i < danmakusNeedShow.size(); i++) {
-//                    handler.addDanmaku(danmakusNeedShow.get(i));
-//                }
-//            }
-//            showAndResumeDrawTask(0L);
-//        }
-        start();
+        if (!isStarted()) {
+            start();
+        }
     }
 
     @Override
     public void hide() {
-        danmakusNeedShow.clear();
+        //reset
+        danmakuBuffer.clear();
+        lastDanmakuShowTime = 0;
+
         stop();
-//        hideAndPauseDrawTask();
-//        removeAllDanmakus();
     }
 
     @Override
@@ -630,7 +555,7 @@ public class DanmakuView extends View implements IDanmakuView, IDanmakuViewContr
 
     @Override
     public boolean isShown() {
-        return mDanmakuVisible && super.isShown();
+        return super.isShown() && isPrepared() && mDanmakuVisible;
     }
 
     @Override
@@ -664,8 +589,8 @@ public class DanmakuView extends View implements IDanmakuView, IDanmakuViewContr
         }
     }
 
-    public static float dp2px(final Context context, final float dp) {
-        DisplayMetrics dm = context.getResources().getDisplayMetrics();
+    public float dp2px(final float dp) {
+        DisplayMetrics dm = getContext().getResources().getDisplayMetrics();
         return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, dm);
     }
 }
